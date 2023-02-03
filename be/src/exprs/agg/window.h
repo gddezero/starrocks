@@ -1,7 +1,6 @@
 // This file is licensed under the Elastic License 2.0. Copyright 2021-present, StarRocks Inc.
 
 #pragma once
-
 #include "column/column_helper.h"
 #include "exprs/agg/aggregate.h"
 
@@ -411,7 +410,11 @@ struct LeadLagState {
     bool defualt_is_null = false;
 };
 
+<<<<<<< HEAD
 template <PrimitiveType PT, typename T = RunTimeCppType<PT>, typename = guard::Guard>
+=======
+template <LogicalType PT, bool ignoreNulls, bool isLag, typename T = RunTimeCppType<PT>>
+>>>>>>> 10151d29a ([Feature]Support ignore nulls for lead/lag window function (#17220))
 class LeadLagWindowFunction final : public ValueWindowFunction<PT, LeadLagState<PT>, T> {
     using InputColumnType = typename ValueWindowFunction<PT, FirstValueState<PT>, T>::InputColumnType;
 
@@ -442,15 +445,41 @@ class LeadLagWindowFunction final : public ValueWindowFunction<PT, LeadLagState<
             return;
         }
 
-        if (columns[0]->is_null(frame_end - 1)) {
-            this->data(state).is_null = true;
-            return;
+        if (!columns[0]->is_null(frame_end - 1)) {
+            this->data(state).is_null = false;
+            const Column* data_column = ColumnHelper::get_data_column(columns[0]);
+            const InputColumnType* column = down_cast<const InputColumnType*>(data_column);
+            AggDataTypeTraits<PT>::assign_value(this->data(state).value,
+                                                AggDataTypeTraits<PT>::get_row_ref(*column, frame_end - 1));
+        } else {
+            if (!ignoreNulls) {
+                this->data(state).is_null = true;
+                return;
+            }
+            // for lead/lag, [peer_group_start, peer_group_end] equals to [partition_start, partition_end]
+            // when lead/lag called, the whole partitoin's data has already been here, so we can just check all the way to the begining or the end
+            size_t value_index = isLag ? ColumnHelper::last_nonnull(columns[0], peer_group_start, frame_end - 1)
+                                       : ColumnHelper::find_nonnull(columns[0], frame_end, peer_group_end);
+            DCHECK_LE(value_index, peer_group_end);
+            DCHECK_GE(value_index, peer_group_start);
+            if (value_index == peer_group_end || columns[0]->is_null(value_index)) {
+                this->data(state).is_null = true;
+            } else {
+                const Column* data_column = ColumnHelper::get_data_column(columns[0]);
+                const InputColumnType* column = down_cast<const InputColumnType*>(data_column);
+                this->data(state).is_null = false;
+                AggDataTypeTraits<PT>::assign_value(this->data(state).value,
+                                                    AggDataTypeTraits<PT>::get_row_ref(*column, value_index));
+            }
         }
+<<<<<<< HEAD
 
         this->data(state).is_null = false;
         const Column* data_column = ColumnHelper::get_data_column(columns[0]);
         const InputColumnType* column = down_cast<const InputColumnType*>(data_column);
         this->data(state).value = column->get_data()[frame_end - 1];
+=======
+>>>>>>> 10151d29a ([Feature]Support ignore nulls for lead/lag window function (#17220))
     }
 
     void get_values(FunctionContext* ctx, ConstAggDataPtr __restrict state, Column* dst, size_t start,
