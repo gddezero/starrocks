@@ -169,11 +169,7 @@ public:
         return std::make_shared<LastValueWindowFunction<PT, ignoreNulls>>();
     }
 
-<<<<<<< HEAD
-    template <PrimitiveType PT>
-=======
-    template <LogicalType PT, bool ignoreNulls, bool isLag>
->>>>>>> 10151d29a ([Feature]Support ignore nulls for lead/lag window function (#17220))
+    template <PrimitiveType PT, bool ignoreNulls, bool isLag>
     static AggregateFunctionPtr MakeLeadLagWindowFunction() {
         return std::make_shared<LeadLagWindowFunction<PT, ignoreNulls, isLag>>();
     }

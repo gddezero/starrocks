@@ -410,11 +410,7 @@ struct LeadLagState {
     bool defualt_is_null = false;
 };
 
-<<<<<<< HEAD
-template <PrimitiveType PT, typename T = RunTimeCppType<PT>, typename = guard::Guard>
-=======
-template <LogicalType PT, bool ignoreNulls, bool isLag, typename T = RunTimeCppType<PT>>
->>>>>>> 10151d29a ([Feature]Support ignore nulls for lead/lag window function (#17220))
+template <PrimitiveType PT, bool ignoreNulls, bool isLag, typename T = RunTimeCppType<PT>>
 class LeadLagWindowFunction final : public ValueWindowFunction<PT, LeadLagState<PT>, T> {
     using InputColumnType = typename ValueWindowFunction<PT, FirstValueState<PT>, T>::InputColumnType;
 
